@@ -56,11 +56,12 @@ app.put("/updateUser",(req,res)=>{
 
 app.delete("/deleteUser",(req,res)=>{
     try{
-        if(req.query.userId!=null){
+        if(req.query.phNumber!=null){
             var setValue = data;
             const dataRemoved = setValue.filter((el) => {
             return el.phNumber !== req.query.phNumber;
         });
+        console.log(dataRemoved);
         fs.writeFile("userData.json", JSON.stringify(dataRemoved) , function (err) {
             if (err){
                 res.status(400).json({"message":"Something Went Wrong"}); 
