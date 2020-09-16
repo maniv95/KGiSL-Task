@@ -3,6 +3,8 @@ const express = require('express')
 var bodyParser = require("body-parser")
 var app = express()
 const fs = require("fs");
+const jwt = require('jsonwebtoken');
+const auth = require('./middleware/auth');
 app.use(bodyParser.json({limit:"10mb"}));
 app.use(bodyParser.urlencoded({limit:"10mb", extended:true, parameterLimit:500}))
 app.use(function(req, res, next) {
@@ -12,7 +14,23 @@ app.use(function(req, res, next) {
     next();
 });
 var data = require("./userData.json");
-app.get("/users", (req, res) => {
+
+app.post("/userLogin",(req,res)=>{
+    try {
+        var username = "user";
+        var password = "user@123";
+        if(req.body.username==username && req.body.password==password){
+            var token = jwt.sign({ username: password }, 'shhhhh');
+            res.status(200).json({"message":"Logged In Success","token":token});
+        }else{
+            res.status(401).json({"message":"Invalid Credentails"});
+        }
+    } catch (error) {
+        res.status(500).json({"message":"Something went wrong","errMsg":error});
+    }
+})
+
+app.get("/users", auth,(req, res) => {
     try{
         if(data!=null){
             res.status(200).json({"message":"All User Data Fetched","data": data});
@@ -24,7 +42,7 @@ app.get("/users", (req, res) => {
     }
   });
 
-app.post("/addUsers",(req,res)=>{
+app.post("/addUsers",auth,(req,res)=>{
     try{
         if(req.body!=null){
             var name= req.body.name;
@@ -50,18 +68,39 @@ app.post("/addUsers",(req,res)=>{
     }
 })
 
-app.put("/updateUser",(req,res)=>{
-    
+app.put("/updateUser",auth,(req,res)=>{
+    try {
+        if(req.body!=null){
+            var jsonObj = data;
+            for (var i = 0; i < jsonObj.length; i++) {
+                if (jsonObj[i].phNumber === req.body.phNumber) {
+                  jsonObj[i].name = "Thomas";
+                  console.log("g",jsonObj[i]);
+                  break;
+                }
+            } 
+            fs.writeFile("userData.json", JSON.stringify(jsonObj) , function (err) {
+                if (err){
+                    res.status(400).json({"message":"Something Went Wrong"}); 
+                }else{
+                    res.status(200).json({"message":"Updated User From Existing Records"}); 
+                }
+             })  
+        }else{
+            res.status(400).json({"message":"Something Went Wrong"});
+        }
+    } catch (error) {
+        res.status(500).json({"message":"Error Updating","errMsg":error});
+    }
 })
 
-app.delete("/deleteUser",(req,res)=>{
+app.delete("/deleteUser",auth,(req,res)=>{
     try{
         if(req.query.phNumber!=null){
             var setValue = data;
             const dataRemoved = setValue.filter((el) => {
             return el.phNumber !== req.query.phNumber;
         });
-        console.log(dataRemoved);
         fs.writeFile("userData.json", JSON.stringify(dataRemoved) , function (err) {
             if (err){
                 res.status(400).json({"message":"Something Went Wrong"}); 
