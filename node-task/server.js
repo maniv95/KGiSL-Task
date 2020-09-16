@@ -74,8 +74,7 @@ app.put("/updateUser",auth,(req,res)=>{
             var jsonObj = data;
             for (var i = 0; i < jsonObj.length; i++) {
                 if (jsonObj[i].phNumber === req.body.phNumber) {
-                  jsonObj[i].name = "Thomas";
-                  console.log("g",jsonObj[i]);
+                  jsonObj[i].name = req.body.name;
                   break;
                 }
             } 
