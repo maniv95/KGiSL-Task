@@ -5,6 +5,8 @@ var app = express()
 const fs = require("fs");
 const jwt = require('jsonwebtoken');
 const auth = require('./middleware/auth');
+var cors = require('cors');
+app.use(cors())
 app.use(bodyParser.json({limit:"10mb"}));
 app.use(bodyParser.urlencoded({limit:"10mb", extended:true, parameterLimit:500}))
 app.use(function(req, res, next) {
