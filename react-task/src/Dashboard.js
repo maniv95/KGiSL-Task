@@ -20,7 +20,9 @@ import Search from '@material-ui/icons/Search';
 import ViewColumn from '@material-ui/icons/ViewColumn';
 import axios from 'axios'
 import Alert from '@material-ui/lab/Alert';
+import { Button } from '@material-ui/core';
 
+let user = localStorage.getItem('token');
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
   Check: forwardRef((props, ref) => <Check {...props} ref={ref} />),
@@ -46,6 +48,7 @@ const api = axios.create({
 })
 
 
+
 function Dashboard() {
 
   var columns = [
@@ -54,7 +57,7 @@ function Dashboard() {
     {title: "Phone Number", field: "phNumber"},
     {title: "Incoming Call Count", field: "incomingCallCount"},
     {title: "Location", field: "location"},
-    {title: "Outgoing Call Count", field: "outgoingCallCount"}
+    {title: "Outgoing Call Count", field: "outGoingCallCount"}
   ]
   const [data, setData] = useState([]); //table data
 
@@ -63,12 +66,18 @@ function Dashboard() {
   const [errorMessages, setErrorMessages] = useState([])
 
   useEffect(() => { 
-    api.get("/users")
-        .then(res => {               
+    api.get("/users",{
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          'Authorization': 'Bearer '+ user,
+        }
+      })
+        .then(res => {  
+            console.log(res);             
             setData(res.data.data)
          })
          .catch(error=>{
-             console.log("Error")
+             console.log("Error",error);
          })
   }, [])
 
@@ -90,14 +99,19 @@ function Dashboard() {
     if(newData.location === ""){
       errorList.push("Please enter location")
     }
-    if(newData.outgoingCallCount === ""){
+    if(newData.outGoingCallCount === ""){
       errorList.push("Please enter outgoing call count")
     }
 
     
 
     if(errorList.length < 1){
-      api.patch("/users/"+newData.id, newData)
+      api.put("/updateUser",{ headers: {
+        "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS,POST,PUT",
+        'Authorization': 'Bearer '+user,
+        'Accept' : 'application/json',
+        'Content-Type': 'application/json'
+      }},newData)
       .then(res => {
         const dataUpdate = [...data];
         const index = oldData.tableData.id;
@@ -140,12 +154,17 @@ function Dashboard() {
     if(newData.location === ""){
       errorList.push("Please enter location")
     }
-    if(newData.outgoingCallCount === ""){
+    if(newData.outGoingCallCount === ""){
       errorList.push("Please enter outgoing call count")
     }
 
     if(errorList.length < 1){ //no error
-      api.post("/users", newData)
+      api.post("/addUsers",{
+        headers: { 
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJAMTIzIiwiaWF0IjoxNjAwMzQwNjE4fQ.aH6uBlfnqgaUorJbRGz5mhBu1E-RpDMnj_Eo63Med2g', 
+          'Content-Type': 'application/json'
+        }
+      },newData)
       .then(res => {
         let dataToAdd = [...data];
         dataToAdd.push(newData);
@@ -155,6 +174,7 @@ function Dashboard() {
         setIserror(false)
       })
       .catch(error => {
+        console.log("post error",error);
         setErrorMessages(["Cannot add data. Server error!"])
         setIserror(true)
         resolve()
@@ -169,8 +189,13 @@ function Dashboard() {
   }
 
   const handleRowDelete = (oldData, resolve) => {
-    
-    api.delete("/users/"+oldData.id)
+    console.log("oldupd",oldData)
+    api.delete("/deleteUser",null,{query:{phNumber:oldData.phNumber}},{
+      headers: {
+        "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS,POST,PUT",
+        'Authorization': 'Bearer '+user,
+      }
+    })
       .then(res => {
         const dataDelete = [...data];
         const index = oldData.tableData.id;
@@ -185,12 +210,16 @@ function Dashboard() {
       })
   }
 
+  const logout = ()=>{
+    localStorage.clear();
+    window.location.href = '/';
+}
+
   return (
     <div className="App">
-      
+      <Button style = {{'float':"right"}} onClick={logout}>logout</Button>
       <Grid container spacing={1}>
-          <Grid item xs={3}></Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12}>
           <div>
             {iserror && 
               <Alert severity="error">
@@ -201,7 +230,7 @@ function Dashboard() {
             }       
           </div>
             <MaterialTable
-              title="User data from remote source"
+              title="Contacts"
               columns={columns}
               data={data}
               icons={tableIcons}
@@ -222,7 +251,6 @@ function Dashboard() {
               }}
             />
           </Grid>
-          <Grid item xs={3}></Grid>
         </Grid>
     </div>
   );
